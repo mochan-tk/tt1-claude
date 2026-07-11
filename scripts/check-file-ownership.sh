@@ -14,8 +14,9 @@
 # Rules:
 #   - The PR body must link its Task issue via `Closes #<n>`
 #     (Fixes/Resolves variants accepted; first same-repo link wins).
-#   - Ownership patterns come from the issue's `## File ownership` section:
-#     one pattern per list item; inline backticks stripped; a trailing `/`
+#   - Ownership patterns come from the issue's `## File ownership` section
+#     (h2 or h3 — GitHub issue forms render field labels as `###`): one
+#     pattern per list item; inline backticks stripped; a trailing `/`
 #     claims the subtree (`docs/` == `docs/*`).
 #   - Matching uses bash patterns where `*` also crosses `/`
 #     (`firmware/*` matches `firmware/a/b.c`) — prefer directory prefixes.
@@ -53,18 +54,24 @@ extract_patterns() {
   awk '
     BEGIN { insec = 0; incomment = 0 }
     { gsub(/\r/, "") }
-    /^##[[:space:]]+File ownership/ { insec = 1; next }
-    insec && /^##[[:space:]]/ { insec = 0 }
+    /^###?[[:space:]]+File ownership/ { insec = 1; next }
+    insec && /^###?[[:space:]]/ { insec = 0 }
     insec == 0 { next }
     {
       line = $0
       if (incomment) {
-        if (line ~ /-->/) { incomment = 0; sub(/^.*-->/, "", line) }
-        else next
+        e = index(line, "-->")
+        if (e == 0) next
+        line = substr(line, e + 3)
+        incomment = 0
       }
-      while (line ~ /<!--/) {
-        if (line ~ /<!--.*-->/) sub(/<!--[^>]*-->/, "", line)
-        else { sub(/<!--.*$/, "", line); incomment = 1 }
+      # index()-based comment stripping: a regex-substitution loop here can
+      # run forever when a comment body itself contains ">".
+      while ((s = index(line, "<!--")) > 0) {
+        rest = substr(line, s + 4)
+        e = index(rest, "-->")
+        if (e == 0) { line = substr(line, 1, s - 1); incomment = 1; break }
+        line = substr(line, 1, s - 1) substr(rest, e + 3)
       }
       print line
     }
@@ -76,10 +83,14 @@ extract_patterns() {
 }
 
 # stdin: PR body -> stdout: first linked same-repo issue number, or nothing.
+# Every stage must consume ALL of its input — an early-exit stage (`head`)
+# SIGPIPEs the upstream writer on large bodies, and under pipefail that
+# aborts the whole script; `sed -n 1p` selects the first line without
+# closing the pipe early.
 extract_issue() {
-  tr '[:upper:]' '[:lower:]' \
+  { tr '[:upper:]' '[:lower:]' || true; } \
     | { grep -oE '(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)[[:space:]]*:?[[:space:]]*#[0-9]+' || true; } \
-    | head -n 1 | { grep -oE '[0-9]+' || true; }
+    | sed -n '1p' | { grep -oE '[0-9]+' || true; }
 }
 
 # path_matches <path> <pattern>: bash pattern match; trailing / = subtree.
@@ -148,6 +159,17 @@ true
   check "no link"        ""   "$(printf 'no reference here' | extract_issue)"
   check "comment placeholder ignored" "" \
     "$(printf 'Closes #<!-- Task issue number -->' | extract_issue)"
+
+  check "comment containing '>' does not hang" "docs/" \
+    "$(printf '## File ownership\n<!-- e.g. a > b -->\n- docs/\n' | extract_patterns)"
+  check "issue-form h3 headings parsed" "docs/scratch/*" \
+    "$(printf '### File ownership\n\n- docs/scratch/*\n\n### Verification\n\nx\n' | extract_patterns)"
+  # Assert output AND exit status: in argument position a failing command
+  # substitution is invisible to set -e, but the real call site is an
+  # assignment, where a 141 (SIGPIPE under pipefail) aborts the script.
+  local huge_out huge_rc=0
+  huge_out=$(printf 'closes #42 x\n%.0s' {1..50000} | extract_issue) || huge_rc=$?
+  check "huge body parsed without SIGPIPE abort" "42/0" "${huge_out}/${huge_rc}"
 
   [[ "$fails" -eq 0 ]] || { echo "self-test: ${fails} failure(s)" >&2; exit 1; }
   echo "self-test: all passed"
