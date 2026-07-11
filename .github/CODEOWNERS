@@ -1,0 +1,11 @@
+# CODEOWNERS — review gate for paths agents must not change unilaterally.
+#
+# Template adopters: replace @mochan-tk with your own user or team during
+# onboarding (.github/skills/project-onboarding/SKILL.md). Pair this file
+# with a branch ruleset (scripts/setup-ruleset.sh) so the assignments are
+# actually enforced on pull requests.
+#
+# Agreements are human-owned decisions; workflows are the verification
+# gates — both need a human reviewer on every change (README, step 5).
+/docs/agreements/    @mochan-tk
+/.github/workflows/  @mochan-tk

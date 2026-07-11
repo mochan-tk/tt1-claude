@@ -1,0 +1,14 @@
+# Retro Log
+
+Ledger of system improvements produced by `.github/skills/retro/SKILL.md`.
+One row per `retro:` PR — this trail is what lets future hygiene passes see
+why a rule exists (a rule with no traceable origin cannot be safely removed).
+
+| Date | Failure class | Fix (asset + change) | Evidence |
+|---|---|---|---|
+| 2026-07-04 | bash-3.2 empty-array crash in helper scripts | helper scripts (`setup-labels.sh`, `frontier.sh`, `new-task.sh`): applied the `${arr[@]+"${arr[@]}"}` guard idiom to empty-array expansions under `set -u`; bash-3.2 runs and shellcheck-clean encoded in the fixing tasks' acceptance criteria, and all tracked scripts now run under the `scaffold-self-check` CI shellcheck step | #7 #9 |
+| 2026-07-04 | scaffold content had no deterministic self-verification | `.github/workflows/ci.yml`: new `scaffold-self-check` job (pinned shellcheck v0.11.0 + actionlint 1.7.12) plus `scripts/check-template-sync.sh` and `scripts/check-md-links.sh` | #11 |
+| 2026-07-04 | every app-session PR declared the same branch-name deviation (workspace tooling prefix instead of `task/<n>-<slug>`, forced by the app's `rename_branch` tool) | AGENTS.md §4 + session-orchestration skill: a managed surface's tool-generated prefix is an accepted equivalent needing no deviation note | #7 #9 #10 #11 #13 #18 |
+| 2026-07-04 | downstream deployment expected the roadmap board "in the repository" and could not find the org-level Projects v2 URL | `scripts/setup-project.sh`: `--owner` now defaults to the repo owner and `init` prints the repo Projects-tab URL after linking; plan-management + project-onboarding skills note that Projects v2 boards are always user/org-owned and reachable via the repo's Projects tab | mrmo-sandbox/pj-impact-kyoto-2026 onboarding |
+| 2026-07-04 | Epics and Tasks indistinguishable on the Projects v2 roadmap board bootstrapped by `setup-project.sh` (downstream project had to add a Kind field by hand) | `scripts/setup-project.sh`: `init` creates a `Kind` single-select field (Epic/Task) idempotently and `dates` sets it from `type:epic`/`type:task` labels; plan-management skill + README document the manual Group-by-Kind view step | #34 |
+| 2026-07-04 | orchestrator executed infra/cloud work (Azure provisioning, secrets, deploy fix) inline without a pre-existing issue; evidence attached to a closed issue after the fact | orchestrator agent + session-orchestration skill: infra/cloud/deploy work is issue-first and runs in a dedicated child session, never inline in the orchestrator; ad-hoc requests get a Task issue before work begins | #36, mrmo-sandbox/pj-impact-kyoto-2026#25 |

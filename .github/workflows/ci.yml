@@ -1,0 +1,79 @@
+# Deterministic verification gates (layer 1 of .github/skills/verification/SKILL.md).
+# These checks are the ceiling on agent autonomy: the cloud agent iterates on
+# their failures, and branch rulesets should require them before merge.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # CUSTOMIZE: replace the placeholder below with the project's real
+      # gates, and keep them in sync with the "validated commands" section of
+      # .github/copilot-instructions.md. Examples:
+      #
+      # - uses: actions/setup-node@v4
+      #   with: { node-version: 22, cache: npm }
+      # - run: npm ci
+      # - run: npm run lint
+      # - run: npm test
+      #
+      # Firmware logic tests run on the host — no hardware in CI
+      # (.github/instructions/firmware.instructions.md):
+      # - run: pip install --upgrade platformio
+      # - run: pio test -e native -d firmware
+      # - run: pio run -d firmware        # build all envs as a compile gate
+
+      - name: Scaffold tuning status
+        run: bash scripts/tuning-status.sh --ci
+
+  # Lints the scaffold itself: shell scripts, workflow files, and the
+  # consistency of issue-form templates and Markdown path references.
+  scaffold-self-check:
+    runs-on: ubuntu-latest
+    env:
+      SHELLCHECK_VERSION: v0.11.0
+      ACTIONLINT_VERSION: 1.7.12
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pinned shellcheck
+        run: |
+          curl -fsSL "https://github.com/koalaman/shellcheck/releases/download/${SHELLCHECK_VERSION}/shellcheck-${SHELLCHECK_VERSION}.linux.x86_64.tar.xz" \
+            | tar -xJ
+          sudo install "shellcheck-${SHELLCHECK_VERSION}/shellcheck" /usr/local/bin/shellcheck
+          rm -rf "shellcheck-${SHELLCHECK_VERSION}"
+          shellcheck --version
+
+      - name: Shellcheck all tracked shell scripts
+        run: git ls-files -z '*.sh' | xargs -0 shellcheck -S style
+
+      - name: Install pinned actionlint
+        run: |
+          curl -fsSL "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" \
+            | tar -xz actionlint
+          sudo install actionlint /usr/local/bin/actionlint
+          rm -f actionlint
+          actionlint --version
+
+      - name: Actionlint workflow files
+        run: actionlint -color
+
+      - name: Check issue-form templates stay in sync with body templates
+        run: bash scripts/check-template-sync.sh
+
+      - name: Check Markdown path references resolve
+        run: bash scripts/check-md-links.sh

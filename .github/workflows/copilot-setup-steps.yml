@@ -1,0 +1,33 @@
+# Pre-installs tools into the Copilot cloud (coding) agent's ephemeral
+# environment so it can build and test without exploring. Keep in sync with
+# the "validated commands" section of .github/copilot-instructions.md and
+# with ci.yml. The job name MUST be exactly `copilot-setup-steps`.
+name: "Copilot Setup Steps"
+
+on:
+  workflow_dispatch:
+  push:
+    paths: [".github/workflows/copilot-setup-steps.yml"]
+  pull_request:
+    paths: [".github/workflows/copilot-setup-steps.yml"]
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      # CUSTOMIZE: add the project's toolchain setup. Examples:
+      #
+      # - uses: actions/setup-node@v4
+      #   with: { node-version: 22, cache: npm }
+      # - run: npm ci
+      #
+      # - uses: actions/setup-python@v5
+      #   with: { python-version: "3.12" }
+      # - run: pip install --upgrade platformio
+
+      - name: Placeholder
+        run: echo "Add project setup steps here (see comments above)."

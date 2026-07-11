@@ -1,0 +1,13 @@
+# Repository hygiene — keep session artifacts and OS/editor cruft out of git.
+
+# plan.md is a per-session cache, never committed (.github/skills/session-orchestration/SKILL.md).
+plan.md
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Editor swap/backup files
+*.swp
+*.swo
+*~
