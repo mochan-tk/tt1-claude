@@ -85,6 +85,9 @@ jobs:
       - name: Ownership gate self-test
         run: bash scripts/check-file-ownership.sh --self-test
 
+      - name: Claim ledger self-test
+        run: bash .github/skills/plan-management/scripts/claim-task.sh --self-test
+
       - name: Install pinned actionlint
         run: |
           curl -fsSL "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" \

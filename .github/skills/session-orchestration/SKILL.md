@@ -36,9 +36,15 @@ child so parallel sessions cannot write to the same checkout.
    is a **session cache** — convenient, disposable, never authoritative, and
    never a substitute for updating the issue. Do not commit it
    (add to `.gitignore` if needed).
-4. Comment one line on the issue: `Starting in session <name/link>, branch
-   task/<n>-<slug>` (or the accepted tool-prefixed variant, AGENTS.md §4).
-   Now the world knows this task is taken.
+4. Claim the task on its comment ledger:
+   `.github/skills/plan-management/scripts/claim-task.sh <n> --session <session-id>`
+   — proceed only on exit 0; exit 3 means another session holds it (pick
+   another frontier item). The session id is any stable, whitespace-free
+   token, by convention tool + date or thread (e.g. `claude-code-20260712`,
+   `copilot-app-<session>`, `codex-<thread>`). The claim comment is the
+   durable "this task is taken" signal; follow it with one line naming the
+   branch: `Starting in session <name/link>, branch task/<n>-<slug>` (or
+   the accepted tool-prefixed variant, AGENTS.md §4).
 
 **Work loop:** stay inside the ownership paths; commit early and often;
 update `plan.md` freely; if scope drifts, stop and follow the Ambiguity rule
@@ -76,6 +82,10 @@ is the point.
 
 1. Dispatch only from the frontier (`plan-management` skill), after checking
    that concurrently dispatched tasks have disjoint File-ownership paths.
+   Dispatch = claim first, then spawn: claim the issue with
+   `claim-task.sh <n> --session <session-id>` and dispatch only what you
+   hold, passing that session id to the child (the child's start-ritual
+   claim is then an idempotent re-claim).
 2. **Issue-first, dedicated-session — no exceptions for infra/ops.** Ad-hoc
    requests (e.g. a human asking "can you deploy this?"), and cloud/deploy/
    infra work in general (provisioning, secrets, deploy unblocking), get a
@@ -99,5 +109,9 @@ is the point.
 Escalate (label `needs:human`, stop the affected line of work) when: an
 agreement in `docs/agreements/` turns out wrong; credentials/security issues
 appear; the same task fails twice with different approaches; or two sessions
-claim the same ownership paths. These are judgment or trust failures, not
-execution failures — humans own those.
+claim the same ownership paths. For that last case the claim ledger is the
+deterministic resolver first: the ledger holder (earliest active claim —
+check with `claim-task.sh <n> --status`) proceeds, the other session
+releases; escalate only if the overlap itself was planned (a planning bug).
+These are judgment or trust failures, not execution failures — humans own
+those.
