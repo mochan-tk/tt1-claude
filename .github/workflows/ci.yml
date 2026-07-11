@@ -40,6 +40,27 @@ jobs:
       - name: Scaffold tuning status
         run: bash scripts/tuning-status.sh --ci
 
+  # Deterministic gate for the single-writer rule (AGENTS.md §5): the PR's
+  # diff must stay inside the File-ownership paths of its linked Task issue.
+  # The ownership-exempt label downgrades findings to warnings (auditable).
+  file-ownership:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Diff stays inside the issue's File ownership (AGENTS.md §5)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          bash scripts/check-file-ownership.sh
+          --pr "${{ github.event.pull_request.number }}"
+          -R "$GITHUB_REPOSITORY"
+
   # Lints the scaffold itself: shell scripts, workflow files, and the
   # consistency of issue-form templates and Markdown path references.
   scaffold-self-check:
@@ -60,6 +81,9 @@ jobs:
 
       - name: Shellcheck all tracked shell scripts
         run: git ls-files -z '*.sh' | xargs -0 shellcheck -S style
+
+      - name: Ownership gate self-test
+        run: bash scripts/check-file-ownership.sh --self-test
 
       - name: Install pinned actionlint
         run: |

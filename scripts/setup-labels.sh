@@ -25,5 +25,6 @@ create "exec:app"     "BFDADC" "Route: Copilot app session — steerable, worktr
 create "exec:cli"     "FEF2C0" "Route: Copilot CLI — scripted / batch / CI-triggered"
 create "exec:ide"     "F9D0C4" "Route: IDE with human in the loop — ambiguous or hardware work"
 create "retro:candidate" "EDEDED" "Observed scaffold friction; promote to a retro: PR at the 2nd occurrence"
+create "ownership-exempt" "FBCA04" "Downgrades ownership-gate findings to warnings; auditable on the PR"
 
-echo "Done. 10 labels ensured."
+echo "Done. 11 labels ensured."
